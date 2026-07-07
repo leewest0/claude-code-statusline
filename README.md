@@ -28,9 +28,20 @@ zero-value fields hidden so it never looks cluttered.
 
 Requires [`jq`](https://jqlang.org/) (`brew install jq` on macOS).
 
+Quick install — downloads the script directly, no clone needed:
+
 ```bash
 mkdir -p ~/.claude
-cp statusline.sh ~/.claude/statusline.sh
+curl -fsSL https://raw.githubusercontent.com/leewest0/claude-code-statusline/main/statusline.sh -o ~/.claude/statusline.sh
+chmod +x ~/.claude/statusline.sh
+```
+
+Or, if you'd rather clone the repo and read the script first:
+
+```bash
+git clone https://github.com/leewest0/claude-code-statusline.git
+cp claude-code-statusline/statusline.sh ~/.claude/statusline.sh
+chmod +x ~/.claude/statusline.sh
 ```
 
 Add to `~/.claude/settings.json` (merge if you already have one):

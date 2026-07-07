@@ -26,25 +26,27 @@ zero-value fields hidden so it never looks cluttered.
 
 ## Install
 
-Requires [`jq`](https://jqlang.org/) (`brew install jq` on macOS).
+Requires [`jq`](https://jqlang.org/) (`brew install jq` on macOS, `apt install jq` on Linux).
 
-Quick install — downloads the script directly, no clone needed:
+Quick install:
 
 ```bash
-mkdir -p ~/.claude
-curl -fsSL https://raw.githubusercontent.com/leewest0/claude-code-statusline/main/statusline.sh -o ~/.claude/statusline.sh
-chmod +x ~/.claude/statusline.sh
+curl -fsSL https://raw.githubusercontent.com/leewest0/claude-code-statusline/main/install.sh | bash
 ```
 
-Or, if you'd rather clone the repo and read the script first:
+This installs `statusline.sh` to `~/.claude/statusline.sh` and prints exactly what
+to add to `~/.claude/settings.json` — it never edits that file for you, so nothing
+you already have there gets overwritten.
+
+Prefer to read the script before running it? Clone and install locally instead:
 
 ```bash
 git clone https://github.com/leewest0/claude-code-statusline.git
-cp claude-code-statusline/statusline.sh ~/.claude/statusline.sh
-chmod +x ~/.claude/statusline.sh
+cd claude-code-statusline
+./install.sh
 ```
 
-Add to `~/.claude/settings.json` (merge if you already have one):
+Either way, you'll be told to merge this into `~/.claude/settings.json`:
 
 ```json
 {

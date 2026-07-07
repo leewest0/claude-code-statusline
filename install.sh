@@ -38,6 +38,7 @@ fi
 if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/statusline.sh" ]; then
   cp "$SCRIPT_DIR/statusline.sh" "$TARGET"
 else
+  echo "Downloading statusline.sh..."
   curl -fsSL "$REPO_RAW/statusline.sh" -o "$TARGET"
 fi
 chmod +x "$TARGET"
@@ -58,11 +59,21 @@ No $SETTINGS found. Create it with:
 $STATUSLINE_BLOCK
 }
 EOF
+elif ! jq empty "$SETTINGS" >/dev/null 2>&1; then
+  cat <<EOF
+
+$SETTINGS exists but isn't valid JSON — leaving it untouched.
+Fix it, then add this entry:
+
+{
+$STATUSLINE_BLOCK
+}
+EOF
 elif jq -e '.statusLine' "$SETTINGS" >/dev/null 2>&1; then
   cat <<EOF
 
-$SETTINGS already has a "statusLine" entry — left untouched.
-Point it at $TARGET if you want to switch to this script.
+🔰 $SETTINGS already has a "statusLine" entry — left untouched.
+🔰 Point it at $TARGET if you want to switch to this script.
 EOF
 else
   cat <<EOF

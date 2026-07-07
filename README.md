@@ -4,6 +4,28 @@ A gradient, information-dense status line for [Claude Code](https://code.claude.
 Model, context usage, cost, git branch, rate limits — one glanceable line at the
 bottom of your terminal, with zero-value fields hidden so it never looks cluttered.
 
+## Preview
+
+These aren't mockups — each SVG is rendered straight from `statusline.sh`'s real
+stdout for a fixed mock payload (see `scripts/generate-previews.py`), so they
+can't drift out of sync with the script.
+
+<img src="docs/images/normal.svg" alt="Normal state — 42% context, everything fine">
+
+Normal — context at 42%, everything fine.
+
+<img src="docs/images/warning.svg" alt="Warning state — 75% context, worktree active">
+
+Warning — context at 75%, cost over $10 turns red, worktree indicator shown.
+
+<img src="docs/images/danger.svg" alt="Danger state — 92% context, rate limit over 80%">
+
+Danger — context at 92%, the 5-hour rate limit crosses 80% and turns red.
+
+<img src="docs/images/startup.svg" alt="Startup state — clean, no noise">
+
+Startup — a fresh session; every zero-value field is hidden.
+
 ## Features
 
 - **True-color gradient progress bar** for context window usage (green → yellow → red), with automatic fallback to ANSI-256 or plain ASCII on terminals that don't support 24-bit color

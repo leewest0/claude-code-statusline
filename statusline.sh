@@ -82,7 +82,7 @@ progress_bar() {
     fi
     i=$((i + 1))
   done
-  out="${out}${RESET}"
+  [ "$ASCII_MODE" = "0" ] && out="${out}${RESET}"
   printf '%s' "$out"
 }
 
@@ -141,7 +141,9 @@ human_duration() {
 
 # ---------- separator ----------
 sep() {
-  if [ "$POWERLINE" = "1" ] && [ "$ASCII_MODE" = "0" ]; then
+  if [ "$ASCII_MODE" = "1" ]; then
+    printf ' | '
+  elif [ "$POWERLINE" = "1" ]; then
     printf ' %b \033[38;5;240m\033[0m %b' "$DIM" ""
   else
     printf ' %b|%b ' "$DIM" "$RESET"
@@ -151,7 +153,12 @@ sep() {
 # ---------- main render, takes the TSV line jq produced ----------
 render() {
   line="$1"
-  IFS=$'\t' read -r MODEL_NAME MODEL_ID CTX_PCT CTX_SIZE COST DURATION_MS \
+  # \x1f (unit separator) is used instead of a real tab: bash's `read` treats
+  # tab as IFS whitespace and collapses consecutive tab delimiters, which
+  # silently drops empty fields (agent/worktree are usually empty) and
+  # shifts every field after them. \x1f is not whitespace, so empty fields
+  # are preserved correctly.
+  IFS=$'\x1f' read -r MODEL_NAME MODEL_ID CTX_PCT CTX_SIZE COST DURATION_MS \
     LINES_ADDED LINES_REMOVED RL5H RL7D CWD AGENT WT_BRANCH WT_NAME SENTINEL <<EOF
 $line
 EOF
@@ -193,7 +200,13 @@ EOF
     fi
     case "$MODEL_NAME" in
       *"$size_label"*) : ;; # already shown, skip
-      *) out="${out} ${DIM}(${size_label})${RESET}" ;;
+      *)
+        if [ "$ASCII_MODE" = "1" ]; then
+          out="${out} (${size_label})"
+        else
+          out="${out} ${DIM}(${size_label})${RESET}"
+        fi
+        ;;
     esac
   fi
 
@@ -203,7 +216,9 @@ EOF
   cost_disp=$(printf '%.2f' "$COST" 2>/dev/null || echo "0.00")
   dollar='$'
   [ "$NERDFONT" = "1" ] && dollar=''
-  if [ "$(printf '%.0f' "$COST")" -ge 10 ] 2>/dev/null; then
+  if [ "$ASCII_MODE" = "1" ]; then
+    out="${out}$(sep)${dollar}${cost_disp}"
+  elif [ "$(printf '%.0f' "$COST")" -ge 10 ] 2>/dev/null; then
     out="${out}$(sep)\033[38;5;196m${dollar}${cost_disp}${RESET}"
   elif [ "$cost_disp" = "0.00" ]; then
     out="${out}$(sep)${DIM}${dollar}${cost_disp}${RESET}"
@@ -214,14 +229,22 @@ EOF
   # duration — hidden if zero
   dur=$(human_duration "${DURATION_MS%%.*}")
   if [ -n "$dur" ]; then
-    clock='⏱'
-    [ "$NERDFONT" = "1" ] && clock=''
-    out="${out}$(sep)${clock} ${dur}"
+    if [ "$ASCII_MODE" = "1" ]; then
+      out="${out}$(sep)time:${dur}"
+    else
+      clock='⏱'
+      [ "$NERDFONT" = "1" ] && clock=''
+      out="${out}$(sep)${clock} ${dur}"
+    fi
   fi
 
   # lines added/removed — hidden if both zero
   if [ "$LINES_ADDED" != "0" ] || [ "$LINES_REMOVED" != "0" ]; then
-    out="${out}$(sep)\033[38;5;46m+${LINES_ADDED}${RESET}/\033[38;5;196m-${LINES_REMOVED}${RESET}"
+    if [ "$ASCII_MODE" = "1" ]; then
+      out="${out}$(sep)+${LINES_ADDED}/-${LINES_REMOVED}"
+    else
+      out="${out}$(sep)\033[38;5;46m+${LINES_ADDED}${RESET}/\033[38;5;196m-${LINES_REMOVED}${RESET}"
+    fi
   fi
 
   # git branch + dirty
@@ -230,21 +253,33 @@ EOF
 
   # worktree / agent indicator
   if [ -n "${AGENT:-}" ]; then
-    out="${out}$(sep)⚙ ${AGENT}"
+    if [ "$ASCII_MODE" = "1" ]; then
+      out="${out}$(sep)agent:${AGENT}"
+    else
+      out="${out}$(sep)⚙ ${AGENT}"
+    fi
   elif [ -n "${WT_NAME:-}" ]; then
-    out="${out}$(sep)⚙ worktree:${WT_NAME}"
+    if [ "$ASCII_MODE" = "1" ]; then
+      out="${out}$(sep)worktree:${WT_NAME}"
+    else
+      out="${out}$(sep)⚙ worktree:${WT_NAME}"
+    fi
   fi
 
   # rate limits — hidden if zero, red if > 80%
   if [ "$RL5H_INT" -gt 0 ] 2>/dev/null; then
-    if [ "$RL5H_INT" -gt 80 ]; then
+    if [ "$ASCII_MODE" = "1" ]; then
+      out="${out}$(sep)5h:${RL5H_INT}%"
+    elif [ "$RL5H_INT" -gt 80 ]; then
       out="${out}$(sep)\033[38;5;196m5h:${RL5H_INT}%${RESET}"
     else
       out="${out}$(sep)${DIM}5h:${RL5H_INT}%${RESET}"
     fi
   fi
   if [ "$RL7D_INT" -gt 0 ] 2>/dev/null; then
-    if [ "$RL7D_INT" -gt 80 ]; then
+    if [ "$ASCII_MODE" = "1" ]; then
+      out="${out}$(sep)7d:${RL7D_INT}%"
+    elif [ "$RL7D_INT" -gt 80 ]; then
       out="${out}$(sep)\033[38;5;196m7d:${RL7D_INT}%${RESET}"
     else
       out="${out}$(sep)${DIM}7d:${RL7D_INT}%${RESET}"
@@ -275,7 +310,7 @@ main() {
       (.worktree.branch // ""),
       (.worktree.name // ""),
       "END"
-    ] | @tsv
+    ] | join("\u001f")
   ' 2>/dev/null)
 
   [ -z "$tsv" ] && { printf '◆ Claude\n'; exit 0; }

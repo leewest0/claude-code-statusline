@@ -76,7 +76,7 @@ Claude Code pipes a JSON blob describing the current session to your script's
 stdin on every render (throttled to ~300ms), and whatever the script prints
 to stdout becomes the status line. This script:
 
-1. Reads that JSON with a single `jq` call into a tab-separated line
+1. Reads that JSON with a single `jq` call into a delimited line
 2. Renders a gradient bar, colored by position, for context usage
 3. Applies smart-hide rules to cost/duration/lines/rate-limit segments
 4. Adds a cached git branch check (5s TTL) if the working directory is a repo
